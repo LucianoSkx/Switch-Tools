@@ -36,11 +36,10 @@ Every operation shows live progress, a Cancel button, and an activity log
 
 ## Quick start
 
-**Option A — download the CI build (no compile):**
+**Option A — download the release (no compile):**
 
 1. Grab `SwitchTools-linux-x86_64.tar.gz` from the
-   [Actions artifacts](https://github.com/LucianoSkx/Switch-Tools/actions/workflows/build-appimage.yml)
-   (or a `v*` tag release).
+   [Releases](https://github.com/LucianoSkx/Switch-Tools/releases).
 2. Extract it — you get a `SWITCH_TOOLS/` folder.
 3. Drop your keys in (see [Keys](#keys)), run the AppImage:
 
