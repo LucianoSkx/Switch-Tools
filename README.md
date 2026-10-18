@@ -1,6 +1,6 @@
 # Switch Tools — Linux
 
-Unofficial Linux port of [SAK / Switch Tools v0.7.14](https://psxtools.de) by kempa.
+Unofficial Linux port of [SAK / Switch Tools v0.7.14](github.com/dezem/SAK) by kempa.
 Same workflow as the original — app, helpers and data live in one portable folder —
 rewritten in pure Rust (`egui`, no webview, no Electron).
 
