@@ -1,0 +1,25 @@
+# dependências e builds
+src-tauri/target/
+
+# gerados pelo build-tools.sh ou pelo app
+/portable/
+/.build/
+/squirrel/
+/SAK_TOOLS/
+/*.AppImage
+
+# bin/: o app só usa os wrappers e o README versionados; o resto é build
+/bin/*
+!/bin/README.txt
+!/bin/squirrel
+!/bin/hactoolnet
+
+# chaves são do usuário — nunca versionar
+*.keys
+keys.dat
+
+# pasta gerada pelo setup (build final portátil, não versionar — contém chaves do usuário!)
+/SWITCH_TOOLS/
+
+# venv portátil do NSC_BUILDER (recriado pelo setup.sh; 80 MB, específico da máquina)
+/NSC_BUILDER/py/venv/

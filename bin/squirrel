@@ -1,0 +1,13 @@
+#!/bin/sh
+# Squirrel (NSC_BUILDER) via venv portátil; chaves viram symlink de bin/.
+here="$(dirname "$(readlink -f "$0")")"
+ztools="$here/../NSC_BUILDER/py/ztools"
+if [ ! -e "$ztools/keys.txt" ]; then
+  for k in "$here/prod.keys" "$here/keys.dat"; do
+    if [ -f "$k" ]; then ln -s "$k" "$ztools/keys.txt"; break; fi
+  done
+fi
+if [ ! -e "$ztools/title.keys" ] && [ -f "$here/title.keys" ]; then
+  ln -s "$here/title.keys" "$ztools/title.keys"
+fi
+exec "$here/../NSC_BUILDER/py/venv/bin/python" "$ztools/squirrel.py" "$@"

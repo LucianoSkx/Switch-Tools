@@ -1,0 +1,137 @@
+Changelog:
+Inital release - Beta v0.2.1: (25.11.2018)
+With this tool you can split your own NSP files for FAT32 SD cards.
+So you can easily install them on your switch via the SD card.
+- Only NSP files >= 4GB are accepted.
+  All < 4GB files makes no sense to split! ;-)
+- The splitted files are stored in a folder with a sequential number.
+  As reference for the folder name, the current NSP file name is taken
+  and added with 
+- The archive bit is set automatically.
+Beta v0.3: (26.11.2018)
+- Multiple selection for splitting is now possible
+- Free space will be checked for each title
+Beta v0.4: (01.12.2018)
+- Directly splitting on the sd-card
+Beta v0.5: (12.12.2018)
+- XCI split
+- XCI merge
+- XCI to NSP converting (keys.dat required)
+- FAT32 Format implemented
+- Update feature
+Beta v0.5.1: (18.12.2018)
+- possibility to use prod.keys for 4NXCI
+- added *please wait* message at converting XCI to NSP process
+Beta v0.6: (28.12.2018)
+- Extract firmware update from XCI
+- XCI to NSP converting changes:
+  - filename auto renaming
+  - possibility to directly split for FAT32
+  - possibility to directly split to USB
+Beta v0.6.1: (04.01.2019)
+- small fixes and optimizations
+Beta v0.6.2: (05.01.2019)
+- fix for converting XCI -> NSP always to SAK folder
+Beta v0.6.2.1: (05.01.2019)
+- small fix for 4nxci execution
+Beta v0.6.3: (26.01.2019)
+- 4nxci update to new version 3.0
+- 4nxci check free disk space before converting
+- Extract FW from XCI check free disk space
+- Show needed time for the complete action
+- Removed required administrator rights from SAK
+  If you have problems, run SAK as administrator!
+Beta v0.6.3.1: (29.01.2019)
+- 4nxci update to new version 3.1
+- At converting process XCI to NSP now using titelnaming feature from 4nxci
+Small Update: (01.02.2019)
+- 4nxci update to new version 3.05
+Small Update: (05.02.2019)
+- 4nxci update to new version 3.06
+Small Update: (12.03.2019)
+- 4nxci update to new version 4.0
+Beta v0.6.4: (25.03.2019)
+- At converting process XCI to NSP
+  Output failure message for incorrect/missing entries in prod.keys
+Beta v0.6.4.1: (26.03.2019)
+- Fix for wrong incorrect/missing prod.keys message at XCI to NSP converting
+Small Update: (01.04.2019)
+- 4nxci update to new version 4.01
+Beta v0.6.5: (12.04.2019)
+- small fixes for SAK
+- Added new feature patch nsp to lower firm
+Beta v0.6.5.1: (21.04.2019)
+- small changes for reNXpack at SAK
+- 4nxci update to new version 4.03
+- reNXpack update to new version 1.16
+Beta v0.6.6: (23.06.2019)
+- Added new feature NSP to XCI converting
+Beta v0.6.7: (05.09.2019)
+- Added new feature extract saves form the User partition
+- NSC_BUILDER (only squirrel.exe) update to new version 0.89b
+Beta v0.6.8: (01.10.2019)
+- Added new feature Update XCI with game update
+- Added new feature NSP merge
+Beta v0.6.8.1: (04.10.2019)
+- Fix wrong gui titles
+- NSC_BUILDER (only squirrel.exe) update to new version 0.90d
+Beta v0.6.8.2: (13.10.2019)
+- Small fix Update XCI
+- NSC_BUILDER (only squirrel.exe) update to new version 0.93
+Beta v0.7: (21.10.2019)
+- Redesign SAK Main GUI
+- Added SAK logo
+- Added new feature compress XCI to XCZ
+- Added new feature compress NSP to NSZ
+- hactoolnet update to new version 0.6.0
+- NSC_BUILDER (only squirrel.exe) update to new version 0.95
+Beta v0.7.1: (26.10.2019)
+- Changes for XCI merge added support for 00 split files
+- Added new feature decompress XCZ to XCI
+- Added new feature decompress NSZ to NSP
+- Code cleanup
+Beta v0.7.2: (17.11.2019)
+- NSC_BUILDER (only squirrel.exe) update to new version 0.96c
+- Added splash screen to SAK
+Beta v0.7.3: (22.11.2019)
+- Changes for Update XCI with game update + dlc's (multiselect possible)
+Beta v0.7.3.1: (02.12.2019)
+- Small fix at extract saves
+- hactoolnet update to new version 0.7.0
+- NSC_BUILDER (only squirrel.exe) update to new version 0.96d
+Beta v0.7.4: (05.01.2020)
+- Added new feature Update NSP with game update
+- hactoolnet update to new version 0.8.0
+Beta v0.7.5: (11.06.2020)
+- Changes Update NSP/XCI with game update now support Updates as NSZ
+- Added new feature patch XCI to lower firm
+- hactool update to new version 1.4.0
+- hactoolnet update to new version 0.11.3
+Beta v0.7.6: (26.10.2020)
+- Changes add _patch label if you use the patch XCI or NSP option
+- NSC_BUILDER (only squirrel.exe) update to new version 1.01b
+- hactoolnet update to new version 0.12.0
+Beta v0.7.7: (31.12.2020)
+- Small fix for patching NSP with changing label _patch
+- NSC_BUILDER (only squirrel.exe) revert to version 0.98b
+Beta v0.7.8: (04.05.2021)
+- Added new feature create NRO forwarder
+Beta v0.7.9: (05.05.2021)
+- Added feature create Retroarch Core forwarder
+Beta v0.7.10: (14.05.2021)
+- Added feature change version number in forwarder
+- Added feature allow/deny screenshot in forwarder
+- Added feature enable/disable video capture in forwarder
+Beta v0.7.11: (15.05.2021)
+- Fix some HB-Tools not working in forwarder
+Beta v0.7.12: (05.10.2021)
+- Extract Firmware shows now the Version
+  and renames it to Firmware X.X.X
+- nx-hbloader used for NSP Forwarder
+  recompiled with libnx-4.2.0-master-cee75bb
+- hactoolnet update to new version 0.13.3
+Beta v0.7.13: (08.10.2021)
+- Fix internal SAK update check
+  If readme is deleted by User...causing crash
+Beta v0.7.14: (22.11.2021)
+- Fix the return main menu bug, thx to Signum21

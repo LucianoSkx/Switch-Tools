@@ -1,0 +1,16 @@
+[package]
+name = "sak-linux"
+version = "0.7.14"
+description = "Switch Army Knife (Linux port)"
+edition = "2021"
+
+[dependencies]
+eframe = "0.32"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+rfd = "0.15"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+libc = "0.2"
+
+[profile.release]
+strip = "symbols"
