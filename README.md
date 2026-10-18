@@ -1,6 +1,6 @@
 # Switch Tools — Linux
 
-Unofficial Linux port of [SAK / Switch Tools v0.7.14](github.com/dezem/SAK) by kempa.
+Unofficial Linux port of [SAK (Switch Army Knife) v0.7.14](https://github.com/dezem/SAK) by dezem (archived upstream, read-only since 2023).
 Same workflow as the original — app, helpers and data live in one portable folder —
 rewritten in pure Rust (`egui`, no webview, no Electron).
 
@@ -173,7 +173,7 @@ next to the AppImage.
 
 ## Credits
 
-Original Switch Tools / SAK: **kempa** (psxtools.de), up to v0.7.14.
+Original SAK (Switch Army Knife): **dezem** (https://github.com/dezem/SAK — archived, read-only since Jul 2023).
 Helpers: SciresM (hactool), The-4n (4NXCI, reNXpack), rlaphoenix (hacBrewPack),
 46620/hacpack (hptnacp), julesontheroad (NSC_BUILDER), `nsz` maintainers, and the
 mirror maintainers. Per-tool licenses in `bin/*_LICENSE`.

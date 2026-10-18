@@ -1804,7 +1804,7 @@ pub fn tool_run(tx: &ProgressTx, req: ToolRequest) -> ToolRun {
 // ---------- URL opener (forum / updates) ----------
 
 pub fn open_url(url: String) -> Result<(), String> {
-    if !(url.starts_with("https://psxtools.de/") || url.starts_with("https://github.com/dezem/SAK")) {
+    if !url.starts_with("https://github.com/LucianoSkx/Switch-Tools") {
         return Err("URL not allowed".into());
     }
     Command::new("xdg-open")
@@ -1818,7 +1818,7 @@ pub fn open_url(url: String) -> Result<(), String> {
 
 pub fn info_text() -> String {
     "Switch Tools (Linux port)\nVersion: 0.7.14\nMaintained by luciano\n\n\
-Built on the Switch Tools v0.7.14 feature set (original by kempa / psxtools.de),\n\
+Built on the SAK (Switch Army Knife) v0.7.14 feature set (original by dezem / https://github.com/dezem/SAK),\n\
 ported to a native Rust (egui) portable app for Linux.\n\n\
 With \"Switch Tools\" you can easily manage files for your Switch:\n\
 - Patch XCI/NSP to lower firmware\n\
@@ -1831,7 +1831,7 @@ With \"Switch Tools\" you can easily manage files for your Switch:\n\
 - Create NRO / RetroArch forwarder (installable NSP)\n\
 - Format storage (all sizes) to FAT32\n\n\
 Thanks goes to:\n\
-- kempa for the original Switch Tools (psxtools.de)\n\
+- dezem for the original SAK (Switch Army Knife)\n\
 - The-4n and SciresM for 4NXCI and reNXpack\n\
 - The-4n for hacBrewPack / hptnacp\n\
 - switchbrew for nx-hbloader\n\
