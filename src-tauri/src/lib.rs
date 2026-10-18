@@ -1579,8 +1579,10 @@ fn nro_forwarder_inner(req: &ToolRequest, hacbrewpack: &Path, _tx: &ProgressTx) 
         Ok(_) => {}
         Err(e) => return format!("failed\n{}\n", e),
     }
-    let mut missing = !nacp_path.is_file();
-    if !missing {
+    let mut missing: Vec<&str> = Vec::new();
+    if !nacp_path.is_file() {
+        missing.push("hptnacp output (control/control.nacp)");
+    } else {
         let _ = fs::remove_file(&xml_path);
     }
 
@@ -1588,14 +1590,14 @@ fn nro_forwarder_inner(req: &ToolRequest, hacbrewpack: &Path, _tx: &ProgressTx) 
     if !icon.is_empty() && Path::new(icon).is_file() {
         let _ = fs::copy(icon, nro.join("control/icon_AmericanEnglish.dat"));
     } else {
-        missing = true;
+        missing.push("icon JPG");
     }
     for (src_name, dst) in [("nro_fw_main", "exefs/main"), ("nro_fw_main.npdm", "exefs/main.npdm")] {
         let src = bin_dir().join(src_name);
         if src.is_file() {
             let _ = fs::copy(&src, nro.join(dst));
         } else {
-            missing = true;
+            missing.push(src_name);
         }
     }
     // custom/ overrides the packaged logo files.
@@ -1610,11 +1612,11 @@ fn nro_forwarder_inner(req: &ToolRequest, hacbrewpack: &Path, _tx: &ProgressTx) 
         } else if fallback.is_file() {
             let _ = fs::copy(&fallback, nro.join(dst));
         } else {
-            missing = true;
+            missing.push(bin_name);
         }
     }
-    if missing {
-        return NRO_MISSING.to_string();
+    if !missing.is_empty() {
+        return format!("{}missing: {}\n", NRO_MISSING, missing.join(", "));
     }
 
     let next_argv = if core {
@@ -1850,6 +1852,12 @@ pub fn changelog_text() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    // Tests touching the shared app/bin dirs (fakes + outputs next to the
+    // test binary) must not run concurrently: parallel runners interleave
+    // setup/cleanup and flake (e.g. NRO missing its fake helpers' outputs).
+    static DIRS_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn part_naming_xci() {
@@ -1971,6 +1979,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn tool_run_executes_helper_and_finds_output() {
+        let _guard = DIRS_LOCK.lock().unwrap();
         use std::os::unix::fs::PermissionsExt;
         let exe = bin_dir().join("squirrel");
         fs::create_dir_all(bin_dir()).unwrap();
@@ -2019,6 +2028,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn nro_forwarder_end_to_end_with_fake_helpers() {
+        let _guard = DIRS_LOCK.lock().unwrap();
         use std::os::unix::fs::PermissionsExt;
         fs::create_dir_all(bin_dir()).unwrap();
 
@@ -2079,6 +2089,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn convert_with_split_option_splits_the_nsp() {
+        let _guard = DIRS_LOCK.lock().unwrap();
         use std::os::unix::fs::PermissionsExt;
         fs::create_dir_all(bin_dir()).unwrap();
         // Fake 4nxci: writes <stem>.nsp next to the input and prints a Summary,
