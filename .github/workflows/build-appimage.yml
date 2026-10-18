@@ -45,6 +45,9 @@ jobs:
       - name: Build tools
         run: bash scripts/build-tools.sh
 
+      - name: Test app
+        run: cd src-tauri && cargo test
+
       - name: Build app (release)
         run: cd src-tauri && cargo build --release
 

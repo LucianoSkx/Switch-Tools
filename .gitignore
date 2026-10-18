@@ -12,14 +12,20 @@ src-tauri/target/
 /bin/*
 !/bin/README.txt
 !/bin/squirrel
-!/bin/hactoolnet
 
 # chaves são do usuário — nunca versionar
 *.keys
 keys.dat
+
+# logs do app
+*.log
 
 # pasta gerada pelo setup (build final portátil, não versionar — contém chaves do usuário!)
 /SWITCH_TOOLS/
 
 # venv portátil do NSC_BUILDER (recriado pelo setup.sh; 80 MB, específico da máquina)
 /NSC_BUILDER/py/venv/
+
+# bytecode python (máquina-específico, regenerado a cada execução)
+__pycache__/
+*.pyc
