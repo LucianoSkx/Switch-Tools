@@ -1,6 +1,6 @@
 # Switch Tools — Linux
 
-Unofficial Linux port of [SAK (Switch Army Knife) v0.7.14](https://github.com/dezem/SAK) by dezem (archived upstream, read-only since 2023).
+Unofficial Linux port of [SAK (Switch Army Knife) v0.7.14]((https://github.com/dezem/SAK)) by dezem (archived upstream, read-only since 2023).
 Same workflow as the original — app, helpers and data live in one portable folder —
 rewritten in pure Rust (`egui`, no webview, no Electron).
 
