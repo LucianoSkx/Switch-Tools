@@ -10,12 +10,12 @@ TOOL="$REPO/.build/appimagetool-x86_64.AppImage"
 URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
 OUT="$REPO/SwitchTools.AppImage"
 
-[ -x "$BIN" ] || { echo "FAIL  appimage: binário não compilado (cargo build --release)"; exit 1; }
-command -v mksquashfs >/dev/null 2>&1 || { echo "FAIL  appimage: mksquashfs ausente (pacote squashfs-tools)"; exit 1; }
+[ -x "$BIN" ] || { echo "FAIL  appimage: binary not built (cargo build --release)"; exit 1; }
+command -v mksquashfs >/dev/null 2>&1 || { echo "FAIL  appimage: mksquashfs missing (squashfs-tools package)"; exit 1; }
 
 mkdir -p "$REPO/.build"
 if [ ! -f "$TOOL" ]; then
-  curl -sL -o "$TOOL" "$URL" || { echo "FAIL  appimage: download do appimagetool"; exit 1; }
+  curl -sL -o "$TOOL" "$URL" || { echo "FAIL  appimage: appimagetool download failed"; exit 1; }
 fi
 chmod +x "$TOOL"
 
@@ -42,7 +42,7 @@ chmod +x "$STAGE/AppRun" "$STAGE/sak-linux"
 if ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$TOOL" -n "$STAGE" "$OUT" >/dev/null 2>&1; then
   echo "OK    appimage -> SwitchTools.AppImage"
 else
-  echo "FAIL  appimage: appimagetool (rode o comando sem >/dev/null para ver o erro)"
+  echo "FAIL  appimage: appimagetool (run the command without >/dev/null to see the error)"
   rm -rf "$STAGE"
   exit 1
 fi

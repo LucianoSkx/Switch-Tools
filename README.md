@@ -1,56 +1,57 @@
 # Switch Tools — Linux
 
-Porte não oficial para Linux do conjunto de ferramentas Switch (XCI/NSP/NSZ, etc.), mantido por luciano
-para Linux, em Rust puro (egui, sem webview). App + ferramentas + dados vivem
-numa pasta só, como no original.
+Unofficial Linux port of the Switch tooling set (XCI/NSP/NSZ, etc.), maintained by
+luciano for Linux, written in pure Rust (egui, no webview). App, tools and data
+live in a single folder, just like the original.
 
-## Funções
+## Features
 
-Converter NSP↔XCI, comprimir/decomprimir NSZ e XCZ, dividir (split), mesclar
-(merge), aplicar update e patch, extrair firmware de XCI, extrair savegames,
-gerar o NSP do forwarder NRO e formatar SD em FAT32 — as mesmas do Switch Tools.
+Convert NSP↔XCI, compress/decompress NSZ and XCZ, split, merge, apply updates and
+patches, extract firmware from XCI, extract savegames, generate the NRO forwarder
+NSP and format SD cards as FAT32 — the same features as Switch Tools.
 
-## 1. Dependências (Arch)
+## 1. Dependencies (Arch)
 
-Copie e cole:
+Copy and paste:
 
 ```sh
 sudo pacman -S --needed git rust make gcc python p7zip curl squashfs-tools
 ```
 
-## 2. Compilar
+## 2. Build
 
-Copie e cole (uma única linha):
+Copy and paste (single line):
 
 ```sh
 git clone <url> switch-tools && cd switch-tools && ./setup.sh
 ```
 
-No final a pasta `SWITCH_TOOLS/` sai pronta no repositório — AppImage + `bin/` +
-`NSC_BUILDER/` juntos, autocontida e portátil. Artefatos intermediários são
-apagados automaticamente; para recompilar, rode `./setup.sh` de novo.
+When it finishes, the `SWITCH_TOOLS/` folder is ready inside the repository —
+AppImage + `bin/` + `NSC_BUILDER/` together, self-contained and portable.
+Intermediate artifacts are removed automatically; to rebuild, run `./setup.sh`
+again.
 
-## 3. Usar
+## 3. Use
 
-Copie e cole (troque o caminho das chaves se preciso):
+Copy and paste (adjust the key path if needed):
 
 ```sh
-cp ~/prod.keys SWITCH_TOOLS/bin/                          # ou keys.dat — única coisa que você fornece
-./SWITCH_TOOLS/Switch_Tools.AppImage
+cp ~/prod.keys SWITCH_TOOLS/bin/                          # or keys.dat — the only thing you provide
+./SWITCH_TOOLS/SwitchTools.AppImage
 ```
 
-Os resultados caem ao lado do AppImage (`squirrel/`, `Firmware/` etc.). A pasta
-`SWITCH_TOOLS/` pode ser movida para qualquer lugar (pendrive incluso).
+Results land next to the AppImage (`squirrel/`, `Firmware/`, etc.). The
+`SWITCH_TOOLS/` folder can be moved anywhere (including a USB drive).
 
-Desenvolvimento (rodar sem compilar AppImage): `cargo run --manifest-path
-src-tauri/Cargo.toml`. Montagem manual, passo a passo: `scripts/build-tools.sh`
-→ `cargo build --release` (em `src-tauri/`) → `scripts/make-appimage.sh`.
+Development (run without building the AppImage): `cargo run --manifest-path
+src-tauri/Cargo.toml`. Manual build, step by step: `scripts/build-tools.sh`
+→ `cargo build --release` (in `src-tauri/`) → `scripts/make-appimage.sh`.
 
-Detalhes (fontes de cada ferramenta, quirk de chaves com 34 dígitos, override
-de logo): ver [`bin/README.txt`](bin/README.txt).
+Details (source of each tool, the 34-digit key quirk, logo override): see
+[`bin/README.txt`](bin/README.txt).
 
-## Créditos
+## Credits
 
-Switch Tools original: **kempa** (psxtools.de). Ferramentas: SciresM (hactool,
+Original Switch Tools: **kempa** (psxtools.de). Tools: SciresM (hactool,
 hactoolnet), The-4n (4NXCI, hacBrewPack, hptnacp), julesontheroad
-(NSC_BUILDER) e os mantenedores dos mirrors. Licenças em `bin/*_LICENSE`.
+(NSC_BUILDER) and the mirrors' maintainers. Licenses in `bin/*_LICENSE`.

@@ -17,7 +17,7 @@ dir=""
 clone() { # <name> <url> -> seta $dir
   dir="$SRC/$1"
   if [ ! -d "$dir/.git" ]; then
-    git clone --depth 1 "$2" "$dir" >/dev/null 2>&1 || { echo "FAIL  $1: clone de $2 falhou"; return 1; }
+    git clone --depth 1 "$2" "$dir" >/dev/null 2>&1 || { echo "FAIL  $1: clone of $2 failed"; return 1; }
   fi
 }
 
@@ -44,7 +44,7 @@ build_make() { # <name> <url> <binário, relativo ao repo> <destino em bin/>
     return
   fi
   if [ ! -f "$wd/$bin" ]; then
-    echo "FAIL  $name: binário $bin não foi produzido (log: /tmp/sak-build-$name.log)"
+    echo "FAIL  $name: binary $bin was not produced (log: /tmp/sak-build-$name.log)"
     status=1
     return
   fi
@@ -63,7 +63,7 @@ build_make hptnacp     https://github.com/46620/hacpack          hacPack-Tools/h
 # 2. Dados do SAK Windows: hactoolnet (NativeAOT, fonte apagada → wrapper Wine),
 #    fw_nca_mapping.csv, assets do NRO forwarder e licenças
 if [ ! -f "$SAK7Z" ]; then
-  curl -sL -o "$SAK7Z" "$SAK7Z_URL" || echo "FAIL  sak-data: download do 7z do SAK"
+  curl -sL -o "$SAK7Z" "$SAK7Z_URL" || echo "FAIL  sak-data: SAK 7z download failed"
 fi
 if [ -f "$SAK7Z" ]; then
   ok=1
@@ -72,9 +72,9 @@ if [ -f "$SAK7Z" ]; then
     7z e -y -o"$BIN" "$SAK7Z" "SAK_64bit/bin/$f" >/dev/null || ok=0
   done
   if [ "$ok" = 1 ]; then
-    echo "OK    sak-data -> bin/ (fw_nca_mapping.csv + nro_fw_* + licenças)"
+    echo "OK    sak-data -> bin/ (fw_nca_mapping.csv + nro_fw_* + licenses)"
   else
-    echo "FAIL  sak-data: extração (log acima)"
+    echo "FAIL  sak-data: extraction (see log above)"
     status=1
   fi
 fi
@@ -119,7 +119,7 @@ if [ -x "$venv/bin/pip" ]; then
       chardet zstandard colorama requests pillow nsz >/dev/null 2>&1; then
     echo "OK    squirrel -> bin/squirrel + NSC_BUILDER/ (ztools + venv)"
   else
-    echo "FAIL  squirrel: pip (rede?)"
+    echo "FAIL  squirrel: pip (network?)"
     status=1
   fi
 fi
@@ -134,8 +134,8 @@ find "$nsb" -type f \( -iname "*.bat" -o -iname "*.cmd" -o -iname "*.exe" \) \( 
 rm -rf "$nsb/py/ztools/mtp" 2>/dev/null
 find "$NSB" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null
 [ -x "$venv/bin/pip" ] && "$venv/bin/pip" -q uninstall -y pip >/dev/null 2>&1
-echo "OK    slim -> NSC_BUILDER/ sem .git, docs, DB auto-download (patch nutdb.py), __pycache__, pip"
+echo "OK    slim -> NSC_BUILDER/ without .git, docs, DB auto-download (nutdb.py patch), __pycache__, pip"
 
 echo
-echo "Wrappers no repositório: bin/squirrel (venv portátil) e bin/hactool (nativo)."
+echo "Wrappers in the repository: bin/squirrel (portable venv) and bin/hactool (native)."
 exit $status

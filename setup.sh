@@ -5,24 +5,24 @@
 set -u
 REPO="$(cd "$(dirname "$0")" && pwd)"
 
-echo "== 1/4  Dependências do sistema =="
+echo "== 1/4  System dependencies =="
 falta=""
 for c in git make gcc g++ python3 curl 7z cargo; do
   command -v "$c" >/dev/null 2>&1 || falta="$falta $c"
 done
 if [ -n "$falta" ]; then
-  echo "Falta:$falta"
+  echo "Missing:$falta"
   echo "Arch:  sudo pacman -S --needed git make gcc python p7zip curl rust"
   exit 1
 fi
 
-echo "== 2/4  Ferramentas e dados (bin/ e NSC_BUILDER/) =="
+echo "== 2/4  Tools and data (bin/ and NSC_BUILDER/) =="
 bash "$REPO/scripts/build-tools.sh" || { echo "FAIL: build-tools.sh"; exit 1; }
 
 echo "== 3/4  App (cargo release) =="
 (cd "$REPO/src-tauri" && cargo build --release) || { echo "FAIL: cargo build" ; exit 1; }
 
-echo "== 4/4  AppImage + pasta final =="
+echo "== 4/4  AppImage + final folder =="
 bash "$REPO/scripts/make-appimage.sh" || { echo "FAIL: make-appimage.sh"; exit 1; }
 
 FINAL="$REPO/SWITCH_TOOLS"
@@ -38,10 +38,10 @@ cd "$REPO/bin" && rm -f hactool 4nxci renxpack hacbrewpack hptnacp hactoolnet.ex
   fw_nca_mapping.csv nro_fw* *_LICENSE
 
 echo
-echo "PRONTO. Pasta portátil autocontida (pode mover para onde quiser):"
+echo "DONE. Self-contained portable folder (move it anywhere you want):"
 echo "  $FINAL"
 echo
-echo "Para usar:"
-echo "  1. Copie suas chaves (prod.keys ou keys.dat) para: $FINAL/bin/"
-echo "  2. Abra:  $FINAL/SwitchTools.AppImage"
-echo "  3. Os resultados ficam ao lado do AppImage"
+echo "To use:"
+echo "  1. Copy your keys (prod.keys or keys.dat) to: $FINAL/bin/"
+echo "  2. Open:  $FINAL/SwitchTools.AppImage"
+echo "  3. Results are written next to the AppImage"
