@@ -51,16 +51,26 @@ jobs:
       - name: Build AppImage
         run: bash scripts/make-appimage.sh
 
+      - name: Assemble portable bundle
+        run: |
+          set -e
+          rm -rf SWITCH_TOOLS
+          mkdir -p SWITCH_TOOLS
+          cp SwitchTools.AppImage SWITCH_TOOLS/
+          cp -a bin SWITCH_TOOLS/
+          cp -a NSC_BUILDER SWITCH_TOOLS/
+          tar -czf SwitchTools-linux-x86_64.tar.gz SWITCH_TOOLS
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SwitchTools.AppImage
-          path: SwitchTools.AppImage
+          name: SwitchTools-linux-x86_64
+          path: SwitchTools-linux-x86_64.tar.gz
           if-no-files-found: error
 
       - name: Create release (on tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: SwitchTools.AppImage
+          files: SwitchTools-linux-x86_64.tar.gz
           generate_release_notes: true
