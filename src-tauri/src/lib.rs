@@ -530,7 +530,7 @@ fn split_one(
     let free_mb = free_space_mb(&dest_dir) as f64;
     if free_mb < needed_mb {
         return format!(
-            "Splitting for {} aborted\nFree space is to low\nOnly {:.2}GB free\nNeeded min size: {}\n",
+            "Splitting for {} aborted\nFree space is too low\nOnly {:.2}GB free\nNeeded min size: {}\n",
             name,
             free_mb / 1024.0,
             fmt_size(needed_mb)
@@ -649,7 +649,7 @@ pub fn merge_files(tx: &ProgressTx, req: MergeRequest) -> OpResult {
     let free_mb = free_space_mb(&out_dir) as f64;
     if free_mb < needed_mb {
         let msg = format!(
-            "Merging for {} aborted\nFree space is to low\nOnly {:.2}GB free\nNeeded min size: {}\n",
+            "Merging for {} aborted\nFree space is too low\nOnly {:.2}GB free\nNeeded min size: {}\n",
             display,
             free_mb / 1024.0,
             fmt_size(needed_mb)
@@ -1136,7 +1136,7 @@ fn precheck_message(feature: &str, display: &str, total_bytes: u64) -> Option<St
         // Switch Tools' update flow prints "Converting for" here (copy/paste in the original).
         let verb = if feature.starts_with("update") { "Converting" } else { feature_verb(feature) };
         return Some(format!(
-            "{} for {} aborted\nFree space is to low\nOnly {:.2}GB free\nNeeded min size: {}\n",
+            "{} for {} aborted\nFree space is too low\nOnly {:.2}GB free\nNeeded min size: {}\n",
             verb,
             display,
             free / 1024.0,

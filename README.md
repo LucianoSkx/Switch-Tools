@@ -165,7 +165,7 @@ Optional logo override: a `custom/` folder next to the AppImage with
 | `failed to run bin/squirrel` / pip errors | Network needed once for the venv; delete `NSC_BUILDER/py/venv` and re-run `setup.sh` |
 | `must be 32 hex digits` | [34-digit key quirk](#keys): strip the trailing `00` |
 | FAT32 option greyed / `mkfs.vfat` fails | Install `dosfstools` + polkit; close anything using the device before formatting |
-| `Free space is to low` | SAK's own gate: needs ~2× the input size + 100 MB free |
+| `Free space is too low` | SAK's own gate: needs ~2× the input size + 100 MB free |
 
 Build logs for helpers: `/tmp/sak-build-<name>.log`. App log: `SwitchTools.log`
 next to the AppImage.
