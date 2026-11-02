@@ -608,7 +608,7 @@ impl Sak {
             }
             ui.label(egui::RichText::new("Switch Tools").size(20.0).strong().color(ACCENT));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new(format!("by luciano · v{}", env!("CARGO_PKG_VERSION"))).color(MUTED).size(13.0));
+                ui.label(egui::RichText::new(format!("v{}", env!("CARGO_PKG_VERSION"))).color(MUTED).size(13.0));
             });
         });
     }
