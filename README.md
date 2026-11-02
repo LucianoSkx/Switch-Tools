@@ -32,7 +32,9 @@ Same 18 tools as SAK v0.7.14, grouped the same way in the sidebar:
 | MISC | Fat32 Format | Format a USB device to FAT32 (any size, uses `mkfs.vfat`; **erases everything**) |
 
 Every operation shows live progress, a Cancel button, and an activity log
-(mirrored to `SwitchTools.log` next to the AppImage).
+(mirrored to `SwitchTools.log` next to the AppImage). Files can also be
+dropped straight onto the file cards, and choices like the USB destination,
+XCI trim and compression level are remembered in `switchtools.json`.
 
 ## Quick start
 
@@ -126,8 +128,9 @@ scripts/make-appimage.sh
 
 Outputs are written **next to the AppImage, never inside it**:
 `squirrel/`, `Firmware X.X.X/`, `renxpack_extracted_nsp/`, `nroforwarder/`,
-`extracted_save_*`, `SwitchTools.log`. Split/merge of XCI writes next to the
-parts by default, or to the picked USB stick.
+`extracted_save_*`, `SwitchTools.log`, `switchtools.json`. Split/merge of
+XCI writes next to the parts by default, or to the picked USB stick.
+Merging and splitting ask first before overwriting an existing result.
 
 ### Portable folder layout
 
@@ -165,7 +168,7 @@ Optional logo override: a `custom/` folder next to the AppImage with
 | `failed to run bin/squirrel` / pip errors | Network needed once for the venv; delete `NSC_BUILDER/py/venv` and re-run `setup.sh` |
 | `must be 32 hex digits` | [34-digit key quirk](#keys): strip the trailing `00` |
 | FAT32 option greyed / `mkfs.vfat` fails | Install `dosfstools` + polkit; close anything using the device before formatting |
-| `Free space is too low` | SAK's own gate: needs ~2× the input size + 100 MB free |
+| `Free space is too low` | SAK's own gate: needs the input's size + 100 MB free in the target |
 
 Build logs for helpers: `/tmp/sak-build-<name>.log`. App log: `SwitchTools.log`
 next to the AppImage.
