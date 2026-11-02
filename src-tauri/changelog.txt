@@ -135,3 +135,10 @@ Beta v0.7.13: (08.10.2021)
   If readme is deleted by User...causing crash
 Beta v0.7.14: (22.11.2021)
 - Fix the return main menu bug, thx to Signum21
+Linux port v0.7.15: (02.11.2026)
+- Overwrite confirmation for merge and split
+- Status bar clears after each operation ends
+- Settings persistence in switchtools.json (USB split, trim, compression level, FAT32 split option)
+- Drag & drop files onto the file cards
+- Title ID is validated inline in the NRO forwarder
+- Merge with a single part reports "nothing to merge" instead of staying silent

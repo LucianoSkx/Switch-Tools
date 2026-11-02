@@ -1910,7 +1910,8 @@ pub fn open_url(url: String) -> Result<(), String> {
 }
 
 pub fn info_text() -> String {
-    "Switch Tools (Linux port)\nVersion: 0.7.14\nMaintained by luciano\n\n\
+    format!(
+        "Switch Tools (Linux port)\nVersion: {}\nMaintained by luciano\n\n\
 Built on the SAK (Switch Army Knife) v0.7.14 feature set (original by dezem / https://github.com/dezem/SAK),\n\
 ported to a native Rust (egui) portable app for Linux.\n\n\
 With \"Switch Tools\" you can easily manage files for your Switch:\n\
@@ -1932,8 +1933,9 @@ Thanks goes to:\n\
 - Thealexbarney for LibHac\n\
 - julesontheroad for NSC_BUILDER\n\
 - Ridgecrop Consultants Ltd for FAT32 Format as GUI version\n\
-- luciano: Linux port and packaging"
-        .to_string()
+- luciano: Linux port and packaging",
+        env!("CARGO_PKG_VERSION")
+    )
 }
 
 pub fn changelog_text() -> String {

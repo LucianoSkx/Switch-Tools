@@ -1,6 +1,6 @@
 [package]
 name = "sak-linux"
-version = "0.7.14"
+version = "0.7.15"
 description = "Switch Army Knife (Linux port)"
 edition = "2021"
 
