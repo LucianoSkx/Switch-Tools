@@ -1171,22 +1171,23 @@ fn run_external(exe: &Path, plan: &Planned, tx: &ProgressTx) -> Result<RunOutcom
                     if t.is_empty() {
                         continue;
                     }
-                    // Live progress: squirrel prints percentage bars.
+                    // Live progress: squirrel prints percentage bars; they drive
+                    // the status bar but stay out of the log (they'd flood it).
+                    let mut bar = false;
                     if let Some(pos) = t.rfind('%') {
                         let mut i = pos;
-                        while i > 0 {
-                            let b = t.as_bytes()[i - 1];
-                            if b.is_ascii_digit() {
-                                i -= 1;
-                            } else {
-                                break;
-                            }
+                        while i > 0 && t.as_bytes()[i - 1].is_ascii_digit() {
+                            i -= 1;
                         }
                         if i < pos {
                             if let Ok(pct) = t[i..pos].parse::<u32>() {
                                 emit_progress(tx, pct, t.to_string());
+                                bar = true;
                             }
                         }
+                    }
+                    if bar {
+                        continue;
                     }
                     let _ = tx.send((0, format!("LOG: {}", t)));
                     if !t.contains('%') {
