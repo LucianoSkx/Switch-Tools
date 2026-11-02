@@ -46,6 +46,34 @@ fn find_tool(name: &str) -> Option<PathBuf> {
     None
 }
 
+// ---------- gui config (switchtools.json next to the app) ----------
+
+#[derive(Serialize, Deserialize, Default, Clone)]
+#[serde(default)]
+pub struct Config {
+    pub usb_on: bool,
+    pub usb_sel: usize,
+    pub path_sel: usize,
+    pub trim: bool,
+    pub split_chk: bool,
+    pub level_sel: usize,
+}
+
+fn config_path() -> PathBuf {
+    app_dir().join("switchtools.json")
+}
+
+pub fn load_config() -> Option<Config> {
+    let text = fs::read_to_string(config_path()).ok()?;
+    serde_json::from_str(&text).ok()
+}
+
+pub fn save_config(c: &Config) {
+    if let Ok(json) = serde_json::to_string_pretty(c) {
+        let _ = fs::write(config_path(), json);
+    }
+}
+
 // ---------- activity log ----------
 
 static LOG_LOCK: Mutex<()> = Mutex::new(());
@@ -574,6 +602,31 @@ pub fn split_files(tx: &ProgressTx, req: SplitRequest) -> OpResult {
     OpResult { ok: !messages.is_empty(), messages }
 }
 
+/// Existing outputs a split run would replace, so the GUI can ask before clobbering:
+/// XCI → each part file already in the `<stem><index>` family; NSP → the parts folder.
+pub fn split_conflicts(input: &str, dest: Option<&str>) -> Vec<String> {
+    let src = Path::new(input);
+    let name = src.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let dest_dir = dest.map(PathBuf::from).unwrap_or_else(app_dir);
+    if name.to_lowercase().ends_with(".xci") {
+        let stem = replace_ci(&name, ".xci", "_splitted.xc");
+        let mut found = Vec::new();
+        for idx in 0.. {
+            let p = dest_dir.join(format!("{}{}", stem, idx));
+            if !p.is_file() {
+                break;
+            }
+            found.push(p.display().to_string());
+        }
+        found
+    } else {
+        // Switch Tools: NSP parts land inside a `<name>_splitted.nsp` folder.
+        let stem = replace_ci(&name.replace(' ', "_"), ".nsp", "_splitted.nsp");
+        let folder = dest_dir.join(stem);
+        folder.exists().then(|| vec![folder.display().to_string()]).unwrap_or_default()
+    }
+}
+
 /// Switch Tools `_MERGEXCI` / `_MERGENSP`. Picks the part-naming scheme from the selected file, walks
 /// consecutive parts, and streams them into one output.
 ///
@@ -587,7 +640,7 @@ pub fn merge_files(tx: &ProgressTx, req: MergeRequest) -> OpResult {
     let lower = first_name.to_lowercase();
 
     // Part naming scheme + display name, straight from Switch Tools' If/ElseIf chain.
-    let (mut display, base, padded, out_dir): (String, String, bool, PathBuf) =
+    let (display, base, padded, out_dir): (String, String, bool, PathBuf) =
         if lower.contains("xc0") {
         // `.xc0` -> parts `X.xc1`, `X.xc2`, ... (no zero padding)
         let base = replace_ci(&first_name, ".xc0", ".xc");
@@ -657,31 +710,19 @@ pub fn merge_files(tx: &ProgressTx, req: MergeRequest) -> OpResult {
         return OpResult { ok: false, messages: vec![msg] };
     }
 
-    // Switch Tools does nothing (and says nothing) when only one part was found.
+    // Switch Tools does nothing (and says nothing) when only one part was found;
+    // here the user gets told instead of staring at an empty log.
     if parts.len() < 2 {
-        return OpResult { ok: true, messages: Vec::new() };
+        return OpResult {
+            ok: false,
+            messages: vec![format!(
+                "Merging for {} aborted\nOnly one part found - nothing to merge\n",
+                display
+            )],
+        };
     }
 
-    // Switch Tools output naming: three sequential replacements, then the `_merged_merged` fixup.
-    let out_name = if is_nsp {
-        let n = replace_ci(&display, ".nsp", "_merged.nsp");
-        let n = n.replace("splitted_", "");
-        if !n.to_lowercase().contains(".nsp") {
-            format!("{}_merged.nsp", n)
-        } else {
-            n
-        }
-    } else {
-        let n = replace_ci(&first_name, ".xc0", "_merged.xci");
-        let n = replace_ci(&n, ".xci.00", "_merged.xci");
-        let n = replace_ci(&n, ".xci", "_merged.xci");
-        n.replace("_merged_merged", "_merged")
-    };
-    display = if is_nsp {
-        dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| display.clone())
-    } else {
-        first_name.clone()
-    };
+    let (out_name, display) = merge_names(&display, &first_name, &dir, is_nsp);
 
     let out_path = out_dir.join(&out_name);
     if out_path.exists() {
@@ -752,6 +793,56 @@ pub fn merge_files(tx: &ProgressTx, req: MergeRequest) -> OpResult {
 
     let msg = format!("Merging for {} finished\nMerged {} parts\n", display, parts.len());
     OpResult { ok: true, messages: vec![msg] }
+}
+
+/// Switch Tools merge output naming, shared by `merge_files` and the GUI's
+/// overwrite pre-check (`merge_output_path`).
+fn merge_names(display: &str, first_name: &str, dir: &Path, is_nsp: bool) -> (String, String) {
+    let out_name = if is_nsp {
+        let n = replace_ci(display, ".nsp", "_merged.nsp");
+        let n = n.replace("splitted_", "");
+        if !n.to_lowercase().contains(".nsp") {
+            format!("{}_merged.nsp", n)
+        } else {
+            n
+        }
+    } else {
+        let n = replace_ci(first_name, ".xc0", "_merged.xci");
+        let n = replace_ci(&n, ".xci.00", "_merged.xci");
+        let n = replace_ci(&n, ".xci", "_merged.xci");
+        n.replace("_merged_merged", "_merged")
+    };
+    // The NSP merge is named after — and written one level above — the parts folder.
+    let display = if is_nsp {
+        dir.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| display.to_string())
+    } else {
+        first_name.to_string()
+    };
+    (out_name, display)
+}
+
+/// Would-be output of a merge of `input` (parts walk not run) — drives the GUI
+/// overwrite confirm. Mirrors `merge_files`'s output path.
+pub fn merge_output_path(input: &str, kind: &str) -> Option<PathBuf> {
+    let first = PathBuf::from(input);
+    let dir = first.parent()?.to_path_buf();
+    let first_name = first.file_name().map(|n| n.to_string_lossy().into_owned())?;
+    let lower = first_name.to_lowercase();
+    let is_nsp = kind.eq_ignore_ascii_case("nsp");
+    // Display name as the scheme chain in `merge_files` sets it:
+    // file name for the .xc0/.xci.00 schemes, folder name for the bare `00`.
+    let display = if lower.contains("xc0") || lower.contains("xci.00") {
+        first_name.clone()
+    } else {
+        dir.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or(first_name.clone())
+    };
+    let out_dir = if is_nsp { dir.parent().unwrap_or(Path::new(".")) } else { dir.as_path() };
+    let (out_name, _) = merge_names(&display, &first_name, &dir, is_nsp);
+    Some(out_dir.join(out_name))
 }
 
 fn part_name(idx: u64, padded: bool) -> String {
@@ -1875,6 +1966,41 @@ mod tests {
         assert_eq!(folder, "game_splitted.nsp");
         assert_eq!(format!("{:02}", 0), "00");
         assert_eq!(format!("{:02}", 12), "12");
+    }
+
+    #[test]
+    fn merge_output_naming() {
+        // XCI .xc0 scheme: merged XCI beside the parts (SE fixup resolves the double append).
+        let p = merge_output_path("/data/Game.xc0", "xci").unwrap();
+        assert_eq!(p, PathBuf::from("/data/Game_merged.xci"));
+        let p = merge_output_path("/data/Game.xci.00", "xci").unwrap();
+        assert_eq!(p, PathBuf::from("/data/Game_merged.xci"));
+        // NSP "00" scheme: named after the parts folder, written one level up.
+        let p = merge_output_path("/sd/Game_splitted.nsp/00", "nsp").unwrap();
+        assert_eq!(p, PathBuf::from("/sd/Game_merged.nsp"));
+    }
+
+    #[test]
+    fn split_conflicts_detects_existing_parts() {
+        let dir = std::env::temp_dir().join(format!("st-conflict-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let d = dir.display().to_string();
+        std::fs::write(dir.join("Game_splitted.xc0"), b"x").unwrap();
+        std::fs::write(dir.join("Game_splitted.xc1"), b"x").unwrap();
+        let got = split_conflicts(&format!("{}/Game.xci", d), Some(&d));
+        assert_eq!(
+            got,
+            vec![
+                format!("{}/Game_splitted.xc0", d),
+                format!("{}/Game_splitted.xc1", d)
+            ]
+        );
+        std::fs::create_dir_all(dir.join("Game_splitted.nsp")).unwrap();
+        let got = split_conflicts(&format!("{}/Game.nsp", d), Some(&d));
+        assert_eq!(got, vec![format!("{}/Game_splitted.nsp", d)]);
+        let got = split_conflicts("/tmp/st-conflict-none.xci", Some(&d));
+        assert!(got.is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

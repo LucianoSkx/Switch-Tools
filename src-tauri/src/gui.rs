@@ -2,9 +2,10 @@
 //! Same tools, labels and tooltips as Switch Tools v0.7.14; the flow is modernized.
 
 use crate::{
-    app_log, app_log_reset, fat32_format, generate_titleid, info_text, keys_status, merge_files,
-    op_cancel, split_files, tool_run, usb_devices, Fat32Request, MergeRequest, OpResult,
-    ProgressTx, SplitRequest, ToolRequest, ToolRun, UsbDevice,
+    app_log, app_log_reset, fat32_format, generate_titleid, info_text, keys_status, load_config,
+    merge_files, merge_output_path, op_cancel, save_config, split_conflicts, split_files,
+    tool_run, usb_devices, Config, Fat32Request, MergeRequest, OpResult, ProgressTx,
+    SplitRequest, ToolRequest, ToolRun, UsbDevice,
 };
 use eframe::egui;
 use std::path::Path;
@@ -102,9 +103,32 @@ struct Form {
     rom_path: String,
 }
 
+impl Form {
+    /// Fields that outlive tool switches, seeded from the saved config.
+    /// First-ever launch (`fresh`) starts compression at Switch Tools' INTERMEDIATE.
+    fn for_cfg(cfg: &Config, fresh: bool) -> Form {
+        let mut f = Form::default();
+        f.usb_on = cfg.usb_on;
+        f.usb_sel = cfg.usb_sel;
+        f.path_sel = cfg.path_sel;
+        f.trim = cfg.trim;
+        f.split_chk = cfg.split_chk;
+        f.level_sel = if fresh { 2 } else { cfg.level_sel.min(3) };
+        f
+    }
+}
+
 enum Job {
     Tool(ToolRun),
     Op(OpResult),
+}
+
+/// Where a file drop landed this frame (registered by each `files_card`).
+struct DropZone {
+    rect: egui::Rect,
+    slot: Slot,
+    multiple: bool,
+    exts: Vec<String>,
 }
 
 struct Worker {
@@ -124,6 +148,9 @@ struct Sak {
     run_title: String,
     log: Vec<String>,
     logo: Option<egui::TextureHandle>,
+    cfg: Config,
+    cfg_fresh: bool,
+    drop_zones: Vec<DropZone>,
 }
 
 impl Sak {
@@ -150,9 +177,11 @@ impl Sak {
                 egui::TextureOptions::default(),
             )
         });
+        let saved = load_config();
+        let cfg = saved.clone().unwrap_or_default();
         Sak {
             sel: Tool::XciSplit,
-            form: Form::default(),
+            form: Form::for_cfg(&cfg, saved.is_none()),
             worker: None,
             prog_rx: None,
             pct: 0,
@@ -163,6 +192,9 @@ impl Sak {
             run_title: String::new(),
             log: Vec::new(),
             logo,
+            cfg,
+            cfg_fresh: saved.is_none(),
+            drop_zones: Vec::new(),
         }
     }
 
@@ -256,6 +288,9 @@ impl Sak {
         let elapsed = self.started.map(|s| fmt_elapsed(s.elapsed())).unwrap_or_default();
         self.worker = None;
         self.prog_rx = None;
+        // Status returns to "Ready" instead of keeping the last "...running... 100%".
+        self.pct = 0;
+        self.state_text.clear();
         let (messages, missing, tool, command) = match job {
             Job::Tool(r) => (r.messages, r.missing, r.tool, r.command),
             Job::Op(r) => (r.messages, false, String::new(), String::new()),
@@ -311,9 +346,8 @@ impl Sak {
             return;
         }
         self.sel = t;
-        self.form = Form::default();
+        self.form = Form::for_cfg(&self.cfg, self.cfg_fresh);
         match t {
-            Tool::CompressXci | Tool::CompressNsp => self.form.level_sel = 2,
             Tool::Nro => {
                 self.form.appname = "TITLE NAME".into();
                 self.form.author = "AUTHOR".into();
@@ -344,6 +378,57 @@ impl Sak {
 
     fn refresh_usb(&mut self) {
         self.usb = usb_devices();
+    }
+
+    /// Persist the user's split/compress choices to switchtools.json.
+    fn remember(&mut self) {
+        self.cfg = Config {
+            usb_on: self.form.usb_on,
+            usb_sel: self.form.usb_sel,
+            path_sel: self.form.path_sel,
+            trim: self.form.trim,
+            split_chk: self.form.split_chk,
+            level_sel: self.form.level_sel,
+        };
+        save_config(&self.cfg);
+    }
+
+    /// Route files dropped onto a file card (hit-tested against this frame's zones).
+    fn handle_drop(&mut self, ctx: &egui::Context) {
+        if self.msgbox.is_some() || self.drop_zones.is_empty() {
+            return;
+        }
+        let (dropped, pos) = ctx.input(|i| (i.raw.dropped_files.clone(), i.pointer.latest_pos()));
+        let Some(pos) = pos.filter(|_| !dropped.is_empty()) else {
+            return;
+        };
+        let Some(zone) = self.drop_zones.iter().rev().find(|z| z.rect.contains(pos)) else {
+            return;
+        };
+        let exts = zone.exts.clone();
+        let files: Vec<String> = dropped
+            .iter()
+            .filter_map(|df| df.path.as_ref())
+            .filter(|p| {
+                Path::new(p)
+                    .extension()
+                    .map(|e| e.to_string_lossy().to_lowercase())
+                    .is_some_and(|e| exts.iter().any(|x| x.eq_ignore_ascii_case(&e)))
+            })
+            .map(|p| p.display().to_string())
+            .collect();
+        if files.is_empty() {
+            return;
+        }
+        let target = if zone.multiple {
+            files
+        } else {
+            vec![files[0].clone()]
+        };
+        match zone.slot {
+            Slot::Main => self.form.files = target,
+            Slot::Updates => self.form.updates = target,
+        }
     }
 
     /// Switch Tools's USB destination: mountpoint + selected SD path (`SD root` = none).
@@ -415,6 +500,7 @@ impl eframe::App for Sak {
             ctx.request_repaint_after(Duration::from_millis(100));
         }
         let blocked = self.msgbox.is_some();
+        self.drop_zones.clear();
 
         egui::TopBottomPanel::top("header")
             .frame(
@@ -466,6 +552,8 @@ impl eframe::App for Sak {
                 self.content(ui, target);
             });
         });
+
+        self.handle_drop(ctx);
 
         if let Some((title, text)) = self.msgbox.clone() {
             let rect = ctx.screen_rect();
@@ -725,7 +813,7 @@ impl Sak {
         multiple: bool,
         slot: Slot,
     ) {
-        egui::Frame::NONE
+        let frame = egui::Frame::NONE
             .fill(ui.visuals().faint_bg_color)
             .corner_radius(egui::CornerRadius::same(10))
             .inner_margin(egui::Margin::same(12))
@@ -735,7 +823,7 @@ impl Sak {
                     ui.label(egui::RichText::new(caption).strong().size(14.0).color(ACCENT));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         let label = if multiple { "Choose files…" } else { "Choose file…" };
-                        if ui.button(label).clicked() {
+                        if ui.button(label).on_hover_text("Or drop files here").clicked() {
                             let files = pick(filter, multiple);
                             if !files.is_empty() {
                                 match slot {
@@ -793,6 +881,12 @@ impl Sak {
                     }
                 }
             });
+        self.drop_zones.push(DropZone {
+            rect: frame.response.rect,
+            slot,
+            multiple,
+            exts: filter.1.iter().map(|s| s.to_string()).collect(),
+        });
         ui.add_space(8.0);
     }
 
@@ -824,18 +918,24 @@ impl Sak {
     }
 
     fn usb_block(&mut self, ui: &mut egui::Ui, paths: &[&str]) {
-        ui.checkbox(&mut self.form.usb_on, "Direct split to USB")
-            .on_hover_text("Writes the split parts straight to the USB device");
+        let mut changed = ui
+            .checkbox(&mut self.form.usb_on, "Direct split to USB")
+            .on_hover_text("Writes the split parts straight to the USB device")
+            .changed();
         if self.form.usb_on {
             ui.horizontal(|ui| {
                 if ui.small_button("Refresh").on_hover_text("Refresh connected USB devices").clicked()
                 {
                     self.refresh_usb();
                 }
-                combo(ui, "usb-dev", &self.usb_items(), &mut self.form.usb_sel);
+                let items = self.usb_items();
+                changed |= combo(ui, "usb-dev", &items, &mut self.form.usb_sel);
             });
             let items: Vec<String> = paths.iter().map(|s| s.to_string()).collect();
-            combo(ui, "usb-path", &items, &mut self.form.path_sel);
+            changed |= combo(ui, "usb-path", &items, &mut self.form.path_sel);
+        }
+        if changed {
+            self.remember();
         }
     }
 
@@ -931,8 +1031,13 @@ impl Sak {
                 );
                 ui.add_space(6.0);
                 if is_xci {
-                    ui.checkbox(&mut self.form.trim, "Trim XCI empty space")
-                        .on_hover_text("Trims the empty space at the end of the XCI file");
+                    if ui
+                        .checkbox(&mut self.form.trim, "Trim XCI empty space")
+                        .on_hover_text("Trims the empty space at the end of the XCI file")
+                        .changed()
+                    {
+                        self.remember();
+                    }
                 }
                 let paths = ["SD root", "switch\\xci", "sxos\\xci"];
                 let paths_nsp = ["nsp", "switch\\nsp", "sxos\\nsp"];
@@ -940,12 +1045,31 @@ impl Sak {
             });
         ui.add_space(8.0);
         let ready = !self.form.files.is_empty();
+        let dest = self.usb_dest(if is_xci { &["SD root", "switch\\xci", "sxos\\xci"] } else {
+            &["nsp", "switch\\nsp", "sxos\\nsp"]
+        });
+        let conflicts: Vec<String> = self
+            .form
+            .files
+            .iter()
+            .flat_map(|f| split_conflicts(f, dest.as_deref()))
+            .collect();
+        let mut start_now = false;
         if self.run_row(ui, "Split files", ready) {
+            if conflicts.is_empty() {
+                start_now = true;
+            } else {
+                self.form.ow_confirm = true;
+            }
+        }
+        if self.overwrite_card(ui, &conflicts) {
+            start_now = true;
+        }
+        if start_now {
+            self.form.ow_confirm = false;
             let req = SplitRequest {
                 inputs: self.form.files.clone(),
-                dest: self.usb_dest(if is_xci { &["SD root", "switch\\xci", "sxos\\xci"] } else {
-                    &["nsp", "switch\\nsp", "sxos\\nsp"]
-                }),
+                dest,
                 trim: self.form.trim,
             };
             let title = format!("{} splitting...", if is_xci { "XCI" } else { "NSP" });
@@ -962,7 +1086,29 @@ impl Sak {
         let filter = if is_xci { ("Parts", &["xc0", "00"][..]) } else { ("Parts", &["00"][..]) };
         self.files_card(ui, caption, filter, false, Slot::Main);
         let ready = !self.form.files.is_empty();
+        // The merge would rewrite its output next to / above the parts — ask first
+        // if (e.g.) a previous merge result is still there.
+        let conflicts = self
+            .form
+            .files
+            .first()
+            .and_then(|f| merge_output_path(f, if is_xci { "xci" } else { "nsp" }))
+            .filter(|p| p.exists())
+            .map(|p| vec![p.display().to_string()])
+            .unwrap_or_default();
+        let mut start_now = false;
         if self.run_row(ui, "Merge parts", ready) {
+            if conflicts.is_empty() {
+                start_now = true;
+            } else {
+                self.form.ow_confirm = true;
+            }
+        }
+        if self.overwrite_card(ui, &conflicts) {
+            start_now = true;
+        }
+        if start_now {
+            self.form.ow_confirm = false;
             let req = MergeRequest {
                 input: self.form.files[0].clone(),
                 kind: if is_xci { "xci" } else { "nsp" }.to_string(),
@@ -1009,8 +1155,13 @@ impl Sak {
                     egui::RichText::new("Convert options").strong().size(14.0).color(ACCENT),
                 );
                 ui.add_space(6.0);
-                ui.checkbox(&mut self.form.split_chk, "Split NSP file for FAT32")
-                    .on_hover_text("Split NSP file after converting");
+                if ui
+                    .checkbox(&mut self.form.split_chk, "Split NSP file for FAT32")
+                    .on_hover_text("Split NSP file after converting")
+                    .changed()
+                {
+                    self.remember();
+                }
                 if !self.form.split_chk {
                     self.form.usb_on = false;
                 }
@@ -1051,7 +1202,9 @@ impl Sak {
                 );
                 ui.add_space(6.0);
                 let items: Vec<String> = LEVELS.iter().map(|s| s.to_string()).collect();
-                combo(ui, "compress-level", &items, &mut self.form.level_sel);
+                if combo(ui, "compress-level", &items, &mut self.form.level_sel) {
+                    self.remember();
+                }
             });
         ui.add_space(8.0);
         let ready = !self.form.files.is_empty();
@@ -1065,7 +1218,7 @@ impl Sak {
                 self.form.ow_confirm = true;
             }
         }
-        if self.overwrite_card(ui, &conflicts, &out_ext) {
+        if self.overwrite_card(ui, &conflicts) {
             start_now = true;
         }
         if start_now {
@@ -1102,7 +1255,7 @@ impl Sak {
                 self.form.ow_confirm = true;
             }
         }
-        if self.overwrite_card(ui, &conflicts, &out_ext) {
+        if self.overwrite_card(ui, &conflicts) {
             start_now = true;
         }
         if start_now {
@@ -1117,14 +1270,16 @@ impl Sak {
         self.form
             .files
             .iter()
-            .filter(|f| Path::new(*f).with_extension(out_ext).exists())
-            .cloned()
+            .filter_map(|f| {
+                let out = Path::new(f).with_extension(out_ext);
+                out.exists().then(|| out.display().to_string())
+            })
             .collect()
     }
 
-    /// Confirmation card listing colliding outputs; returns true when the user
-    /// chose to overwrite.
-    fn overwrite_card(&mut self, ui: &mut egui::Ui, conflicts: &[String], out_ext: &str) -> bool {
+    /// Confirmation card listing colliding outputs (paths / folders ready to
+    /// display); returns true when the user chose to overwrite.
+    fn overwrite_card(&mut self, ui: &mut egui::Ui, conflicts: &[String]) -> bool {
         let mut run = false;
         if self.form.ow_confirm && !conflicts.is_empty() {
             ui.add_space(8.0);
@@ -1140,16 +1295,11 @@ impl Sak {
                     ui.add_space(6.0);
                     ui.colored_label(
                         ui.visuals().warn_fg_color,
-                        "Output file(s) already exist and will be replaced:",
+                        "Output already exists and will be overwritten:",
                     );
                     ui.add_space(4.0);
                     for c in conflicts {
-                        ui.monospace(
-                            Path::new(c)
-                                .with_extension(out_ext)
-                                .display()
-                                .to_string(),
-                        );
+                        ui.monospace(c);
                     }
                     ui.add_space(4.0);
                     ui.horizontal(|ui| {
@@ -1279,6 +1429,7 @@ impl Sak {
     }
 
     fn nro_form(&mut self, ui: &mut egui::Ui) {
+        let titleid_ok = valid_titleid(&self.form.titleid);
         self.title(
             ui,
             "NRO forwarder",
@@ -1315,6 +1466,12 @@ impl Sak {
                         self.form.titleid = generate_titleid();
                     }
                 });
+                if !titleid_ok {
+                    ui.colored_label(
+                        ui.visuals().warn_fg_color,
+                        "Title ID must be 16 hex digits (0-9, A-F)",
+                    );
+                }
             });
         ui.add_space(8.0);
         egui::Frame::NONE
@@ -1386,7 +1543,7 @@ impl Sak {
                 }
             });
         ui.add_space(8.0);
-        let ready = self.form.core.is_some();
+        let ready = self.form.core.is_some() && titleid_ok;
         if self.run_row(ui, "Create forwarder", ready) {
             let opts = serde_json::json!({
                 "appname": self.form.appname,
@@ -1408,15 +1565,21 @@ impl Sak {
 
 // ---------- shared widgets ----------
 
-fn combo(ui: &mut egui::Ui, id: &str, items: &[String], sel: &mut usize) {
+/// Returns whether the selection changed (callers persist it).
+fn combo(ui: &mut egui::Ui, id: &str, items: &[String], sel: &mut usize) -> bool {
     egui::ComboBox::from_id_salt(id)
         .selected_text(items.get(*sel).cloned().unwrap_or_default())
         .width(140.0)
         .show_ui(ui, |ui| {
             for (i, it) in items.iter().enumerate() {
-                ui.selectable_value(sel, i, it);
+                if ui.selectable_value(sel, i, it).changed() {
+                    return true;
+                }
             }
-        });
+            false
+        })
+        .inner
+        .unwrap_or(false)
 }
 
 fn pick(filter: (&str, &[&str]), multiple: bool) -> Vec<String> {
@@ -1433,6 +1596,11 @@ fn pick(filter: (&str, &[&str]), multiple: bool) -> Vec<String> {
 fn short_path(p: &str) -> String {
     let name = std::path::Path::new(p).file_name().map(|n| n.to_string_lossy().into_owned());
     name.unwrap_or_else(|| p.to_string())
+}
+
+/// hacbrewpack needs a 16-char hex Title ID; check inline instead of failing at run time.
+fn valid_titleid(id: &str) -> bool {
+    id.len() == 16 && id.chars().all(|c| c.is_ascii_hexdigit())
 }
 
 fn file_size(path: &str) -> Option<String> {
