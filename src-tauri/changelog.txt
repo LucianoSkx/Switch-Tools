@@ -142,3 +142,9 @@ Linux port v0.7.15: (02.11.2026)
 - Drag & drop files onto the file cards
 - Title ID is validated inline in the NRO forwarder
 - Merge with a single part reports "nothing to merge" instead of staying silent
+
+Linux port v0.7.16: (02.11.2026)
+- Version number shown in the app window title and header
+- tqdm progress bars no longer flood the output log
+- Overwrite confirmation for merge and split
+- README fixes (free-space gate, drag & drop, switchtools.json)
