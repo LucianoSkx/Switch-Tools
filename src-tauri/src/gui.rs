@@ -12,7 +12,7 @@ use std::path::Path;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-const TITLE: &str = "Switch Tools";
+const TITLE: &str = concat!("Switch Tools v", env!("CARGO_PKG_VERSION"));
 const LEVELS: [&str; 4] = ["FAST", "INTERMEDIATE", "AVERAGE", "HARD"];
 /// Cyan from the Switch Tools logo — used as the app accent (selection, links, primary buttons).
 const ACCENT: egui::Color32 = egui::Color32::from_rgb(0x2A, 0xB8, 0xD8);
@@ -608,7 +608,7 @@ impl Sak {
             }
             ui.label(egui::RichText::new("Switch Tools").size(20.0).strong().color(ACCENT));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new("by luciano").color(MUTED));
+                ui.label(egui::RichText::new(format!("by luciano · v{}", env!("CARGO_PKG_VERSION"))).color(MUTED).size(13.0));
             });
         });
     }
